@@ -1,14 +1,17 @@
 #include "RayTracer.hpp"
 
 #include "Ray.hpp"
+#include "Hittable.hpp"
+#include "HittableList.hpp"
+#include "Sphere.hpp"
 
 #include <stb_image_write.h>
-#include <stb_image.h>
 #include <glm/glm.hpp>
 
 #include <vector>
 #include <iostream>
 #include <algorithm>
+#include <limits>
 
 namespace rt
 {
@@ -21,31 +24,12 @@ namespace rt
             pixels[pixelIndex + 2] = static_cast<unsigned char>(255.999f * color.b);
         }
 
-        float hitSphere(const glm::vec3 &center, float radius, const Ray &ray)
+        glm::vec3 rayColor(const Ray &ray, const Hittable &world)
         {
-            glm::vec3 oc = center - ray.origin();
-            auto a = glm::dot(ray.direction(), ray.direction());
-            auto b = -2.0f * glm::dot(ray.direction(), oc);
-            auto c = glm::dot(oc, oc) - radius * radius;
-            auto discriminant = b * b - 4 * a * c;
-
-            if (discriminant < 0)
+            HitDesc desc;
+            if (world.Hit(ray, 0, std::numeric_limits<float>::infinity(), desc))
             {
-                return -1.0f;
-            }
-            else
-            {
-                return (-b - std::sqrt(discriminant)) / (2.0f * a);
-            }
-        }
-
-        glm::vec3 rayColor(const Ray &ray)
-        {
-            float t = hitSphere(glm::vec3(0, 0, -1), 0.5f, ray);
-            if (t > 0.0f)
-            {
-                glm::vec3 N = glm::normalize(ray.at(t) - glm::vec3(0, 0, -1));
-                return 0.5f * (N + glm::vec3(1, 1, 1));
+                return 0.5f * (desc.normal + glm::vec3(1.0f));
             }
 
             glm::vec3 unitDirection = glm::normalize(ray.direction());
@@ -62,6 +46,12 @@ namespace rt
         int imageWidth = 800;
         int imageHeight = int(imageWidth / aspectRatio);
         imageHeight = (imageHeight < 1) ? 1 : imageHeight;
+
+        // World
+        HittableList world;
+
+        world.Add(std::make_shared<Sphere>(glm::vec3(0, 0, -1), 0.5));
+        world.Add(std::make_shared<Sphere>(glm::vec3(0, -100.5, -1), 100));
 
         // Camera
         float focalLength = 1.0f;
@@ -100,7 +90,9 @@ namespace rt
                 glm::vec3 rayDirection = pixelCenter - cameraCenter;
 
                 Ray r(cameraCenter, rayDirection);
-                writePixel(pixels, pixelIndex, rayColor(r));
+
+                glm::vec3 pixelColor = rayColor(r, world);
+                writePixel(pixels, pixelIndex, pixelColor);
             }
         }
         std::cout << "\rDone.                 \n";
