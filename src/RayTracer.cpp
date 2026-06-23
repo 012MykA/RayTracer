@@ -21,8 +21,33 @@ namespace rt
             pixels[pixelIndex + 2] = static_cast<unsigned char>(255.999f * color.b);
         }
 
+        float hitSphere(const glm::vec3 &center, float radius, const Ray &ray)
+        {
+            glm::vec3 oc = center - ray.origin();
+            auto a = glm::dot(ray.direction(), ray.direction());
+            auto b = -2.0f * glm::dot(ray.direction(), oc);
+            auto c = glm::dot(oc, oc) - radius * radius;
+            auto discriminant = b * b - 4 * a * c;
+
+            if (discriminant < 0)
+            {
+                return -1.0f;
+            }
+            else
+            {
+                return (-b - std::sqrt(discriminant)) / (2.0f * a);
+            }
+        }
+
         glm::vec3 rayColor(const Ray &ray)
         {
+            float t = hitSphere(glm::vec3(0, 0, -1), 0.5f, ray);
+            if (t > 0.0f)
+            {
+                glm::vec3 N = glm::normalize(ray.at(t) - glm::vec3(0, 0, -1));
+                return 0.5f * (N + glm::vec3(1, 1, 1));
+            }
+
             glm::vec3 unitDirection = glm::normalize(ray.direction());
             float a = 0.5 * (unitDirection.y + 1.0);
             return (1.0f - a) * glm::vec3(1.0f, 1.0f, 1.0f) + a * glm::vec3(0.5f, 0.7f, 1.0f);
