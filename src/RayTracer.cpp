@@ -27,13 +27,13 @@ namespace rt
         glm::vec3 rayColor(const Ray &ray, const Hittable &world)
         {
             HitDesc desc;
-            if (world.Hit(ray, 0, std::numeric_limits<float>::infinity(), desc))
+            if (world.Hit(ray, Interval(0, std::numeric_limits<float>::infinity()), desc))
             {
                 return 0.5f * (desc.normal + glm::vec3(1.0f));
             }
 
             glm::vec3 unitDirection = glm::normalize(ray.direction());
-            float a = 0.5 * (unitDirection.y + 1.0);
+            float a = 0.5f * (unitDirection.y + 1.0f);
             return (1.0f - a) * glm::vec3(1.0f, 1.0f, 1.0f) + a * glm::vec3(0.5f, 0.7f, 1.0f);
         }
 
@@ -43,15 +43,16 @@ namespace rt
     {
         // Image
         float aspectRatio = 16.0f / 9.0f;
-        int imageWidth = 800;
+        int imageWidth = 1280;
         int imageHeight = int(imageWidth / aspectRatio);
         imageHeight = (imageHeight < 1) ? 1 : imageHeight;
+        std::cout << imageWidth << ", " << imageHeight << std::endl;
 
         // World
         HittableList world;
 
-        world.Add(std::make_shared<Sphere>(glm::vec3(0, 0, -1), 0.5));
-        world.Add(std::make_shared<Sphere>(glm::vec3(0, -100.5, -1), 100));
+        world.Add(std::make_shared<Sphere>(glm::vec3(0.0f, 0.0f, -1.0f), 0.5f));
+        world.Add(std::make_shared<Sphere>(glm::vec3(0.0f, -100.5, -1.0f), 100.0f));
 
         // Camera
         float focalLength = 1.0f;

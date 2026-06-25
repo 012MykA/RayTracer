@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Ray.hpp"
+#include "Interval.hpp"
 
 #include <glm/glm.hpp>
 
@@ -25,7 +26,7 @@ namespace rt
     public:
         virtual ~Hittable() = default;
 
-        virtual bool Hit(const Ray &ray, float rayTmin, float rayTmax, HitDesc &desc) const = 0;
+        virtual bool Hit(const Ray &ray, Interval rayT, HitDesc &desc) const = 0;
     };
 
 } // namespace rt

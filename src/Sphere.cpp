@@ -9,7 +9,7 @@ namespace rt
     {
     }
 
-    bool Sphere::Hit(const Ray &ray, float rayTmin, float rayTmax, HitDesc &desc) const
+    bool Sphere::Hit(const Ray &ray, Interval rayT, HitDesc &desc) const
     {
         glm::vec3 oc = m_Center - ray.origin();
         float a = glm::dot(ray.direction(), ray.direction());
@@ -24,10 +24,10 @@ namespace rt
         float sqrtd = std::sqrt(discriminant);
 
         float root = (h - sqrtd) / a;
-        if (root <= rayTmin || root >= rayTmax)
+        if (!rayT.Surrounds(root))
         {
             root = (h + sqrtd) / a;
-            if (root <= rayTmin || root >= rayTmax)
+            if (!rayT.Surrounds(root))
                 return false;
         }
 

@@ -9,7 +9,7 @@ namespace rt
     public:
         Sphere(const glm::vec3 &center, float radius);
 
-        virtual bool Hit(const Ray &ray, float rayTmin, float rayTmax, HitDesc &desc) const override;
+        virtual bool Hit(const Ray &ray, Interval rayT, HitDesc &desc) const override;
 
     private:
         glm::vec3 m_Center;

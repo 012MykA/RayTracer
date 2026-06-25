@@ -16,7 +16,7 @@ namespace rt
         HittableList() = default;
         HittableList(std::shared_ptr<Hittable> obj);
 
-        virtual bool Hit(const Ray &ray, float rayTmin, float rayTmax, HitDesc &desc) const override;
+        virtual bool Hit(const Ray &ray, Interval rayT, HitDesc &desc) const override;
 
         void Add(std::shared_ptr<Hittable> obj);
 

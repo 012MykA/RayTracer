@@ -7,15 +7,15 @@ namespace rt
         Add(obj);
     }
 
-    bool HittableList::Hit(const Ray &ray, float rayTmin, float rayTmax, HitDesc &desc) const
+    bool HittableList::Hit(const Ray &ray, Interval rayT, HitDesc &desc) const
     {
         HitDesc tmpDesc;
         bool hitAnything = false;
-        float closestSoFar = rayTmax;
+        float closestSoFar = rayT.max;
 
         for (const auto &obj : m_Objects)
         {
-            if (obj->Hit(ray, rayTmin, closestSoFar, tmpDesc))
+            if (obj->Hit(ray, Interval(rayT.min, closestSoFar), tmpDesc))
             {
                 hitAnything = true;
                 closestSoFar = tmpDesc.t;
