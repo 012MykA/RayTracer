@@ -14,6 +14,7 @@ namespace rt
     private:
         glm::vec3 m_Center;
         float m_Radius;
+        std::shared_ptr<Material> m_Material;
     };
 
 } // namespace rt

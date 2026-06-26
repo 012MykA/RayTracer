@@ -21,17 +21,23 @@ namespace rt
     {
         void writePixel(unsigned char *pixels, int pixelIndex, const glm::vec3 &color)
         {
-            pixels[pixelIndex + 0] = static_cast<unsigned char>(256 * std::clamp(color.r, 0.0f, 0.999f));
-            pixels[pixelIndex + 1] = static_cast<unsigned char>(256 * std::clamp(color.g, 0.0f, 0.999f));
-            pixels[pixelIndex + 2] = static_cast<unsigned char>(256 * std::clamp(color.b, 0.0f, 0.999f));
+            glm::vec3 gamma = glm::sqrt(color);
+
+            pixels[pixelIndex + 0] = static_cast<unsigned char>(256 * std::clamp(gamma.r, 0.0f, 0.999f));
+            pixels[pixelIndex + 1] = static_cast<unsigned char>(256 * std::clamp(gamma.g, 0.0f, 0.999f));
+            pixels[pixelIndex + 2] = static_cast<unsigned char>(256 * std::clamp(gamma.b, 0.0f, 0.999f));
         }
 
-        glm::vec3 rayColor(const Ray &ray, const Hittable &world)
+        glm::vec3 rayColor(const Ray &ray, int depth, const Hittable &world)
         {
+            if (depth <= 0)
+                return glm::vec3(0.0f);
+
             HitDesc desc;
-            if (world.Hit(ray, Interval(0, std::numeric_limits<float>::infinity()), desc))
+            if (world.Hit(ray, Interval(0.001f, std::numeric_limits<float>::infinity()), desc))
             {
-                return 0.5f * (desc.normal + glm::vec3(1.0f));
+                glm::vec3 direction = desc.normal + randomUnitVector();
+                return 0.1f * rayColor(Ray(desc.point, direction), depth - 1, world);
             }
 
             glm::vec3 unitDirection = glm::normalize(ray.direction());
@@ -61,7 +67,7 @@ namespace rt
         // Image
         int width = camera.imageWidth;
         int height = camera.GetImageHeight();
-        int channels = 3;
+        const int channels = 3;
 
         std::cout << "Rendering image: " << width << "x" << height << std::endl;
 
@@ -71,7 +77,8 @@ namespace rt
         std::fill_n(pixels, totalBytes, 0);
 
         // Render
-        int samplesPerPixel = 3; // Setting
+        int samplesPerPixel = 10; // Setting
+        int maxDepth = 10;        // Setting
 
         float pixelSamplesScale = 1.0f / samplesPerPixel;
 
@@ -89,7 +96,7 @@ namespace rt
                     glm::vec2 offset = getRandomOffset();
                     Ray r = camera.GetRay(x, y, offset);
 
-                    pixelColor += rayColor(r, world);
+                    pixelColor += rayColor(r, maxDepth, world);
                 }
                 pixelColor *= pixelSamplesScale; // pixelSamplesScale = 1.0f / samplesPerPixel
                 writePixel(pixels, pixelIndex, pixelColor);

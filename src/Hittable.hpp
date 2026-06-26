@@ -5,12 +5,17 @@
 
 #include <glm/glm.hpp>
 
+#include <memory>
+
 namespace rt
 {
+    class Material;
+
     struct HitDesc
     {
         glm::vec3 point;
         glm::vec3 normal;
+        std::shared_ptr<Material> material;
         float t;
         bool isFrontFace;
 

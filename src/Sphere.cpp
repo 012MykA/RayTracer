@@ -37,6 +37,8 @@ namespace rt
         glm::vec3 outwardNormal = (desc.point - m_Center) / m_Radius;
         desc.SetFaceNormal(ray, outwardNormal);
 
+        desc.material = m_Material;
+
         return true;
     }
 
