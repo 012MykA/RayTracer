@@ -1,0 +1,9 @@
+Image:
+	Width: 1280
+	Height: 720
+
+RenderConfig:
+	Samples per pixel: 100
+	Max depth: 50
+
+Render time: 591159 ms
