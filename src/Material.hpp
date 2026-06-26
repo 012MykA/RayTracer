@@ -29,7 +29,7 @@ namespace rt
     class Metal : public Material
     {
     public:
-        Metall(const glm::vec3 &albedo);
+        Metal(const glm::vec3 &albedo);
 
         bool Scatter(const Ray &rayIn, const HitDesc &desc, glm::vec3 &attenuation, Ray &scattered) const override;
 

@@ -20,11 +20,11 @@ namespace rt
         return true;
     }
 
-    Metall::Metall(const glm::vec3 &albedo)
+    Metal::Metal(const glm::vec3 &albedo)
     {
     }
 
-    bool Metall::Scatter(const Ray &rayIn, const HitDesc &desc, glm::vec3 &attenuation, Ray &scattered) const
+    bool Metal::Scatter(const Ray &rayIn, const HitDesc &desc, glm::vec3 &attenuation, Ray &scattered) const
     {
         glm::vec3 reflected = reflect(rayIn.direction(), desc.normal);
         scattered = Ray(desc.point, reflected);
