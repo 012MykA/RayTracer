@@ -26,7 +26,7 @@ namespace rt
         glm::vec3 m_Albedo;
     };
 
-    class Metall : public Material
+    class Metal : public Material
     {
     public:
         Metall(const glm::vec3 &albedo);
@@ -34,7 +34,7 @@ namespace rt
         bool Scatter(const Ray &rayIn, const HitDesc &desc, glm::vec3 &attenuation, Ray &scattered) const override;
 
     private:
-    glm::vec3 m_Albedo;
+        glm::vec3 m_Albedo;
     };
 
 } // namespace rt
