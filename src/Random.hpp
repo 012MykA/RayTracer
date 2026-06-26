@@ -9,31 +9,23 @@ namespace rt
 {
     inline float randomFloat(float min = 0.0f, float max = 1.0f)
     {
-        static std::random_device rd;
-        static std::mt19937 gen(rd());
+        thread_local std::random_device rd;
+        thread_local std::mt19937 gen(rd());
 
         std::uniform_real_distribution<float> dis(min, max);
         return dis(gen);
     }
 
-}
-
-namespace glm
-{
-    inline vec3 randomVec3(float min = 0.0f, float max = 1.0f)
+    inline glm::vec3 randomVec3(float min = 0.0f, float max = 1.0f)
     {
-        return vec3(rt::randomFloat(min, max), rt::randomFloat(min, max), rt::randomFloat(min, max));
+        return glm::vec3(rt::randomFloat(min, max), rt::randomFloat(min, max), rt::randomFloat(min, max));
     }
 
-}
-
-namespace rt
-{
     inline glm::vec3 randomUnitVector()
     {
         while (true)
         {
-            glm::vec3 p = glm::randomVec3(-1.0f, 1.0f);
+            glm::vec3 p = randomVec3(-1.0f, 1.0f);
             float lensq = glm::dot(p, p);
             if (1e-160f < lensq && lensq <= 1.0f)
             {

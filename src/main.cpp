@@ -1,6 +1,7 @@
 #include "RayTracer.hpp"
 
-#include <glm/glm.hpp>
+#include <string>
+#include <iostream>
 
 int main()
 {

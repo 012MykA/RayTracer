@@ -10,9 +10,6 @@ namespace rt
     class HittableList : public Hittable
     {
     public:
-        std::vector<std::shared_ptr<Hittable>> m_Objects;
-
-    public:
         HittableList() = default;
         HittableList(std::shared_ptr<Hittable> obj);
 
@@ -21,6 +18,9 @@ namespace rt
         void Add(std::shared_ptr<Hittable> obj);
 
         void Clear();
+
+    private:
+        std::vector<std::shared_ptr<Hittable>> m_Objects;
     };
 
 } // namespace rt

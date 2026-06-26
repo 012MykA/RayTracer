@@ -16,6 +16,9 @@
 #include <iostream>
 #include <algorithm>
 #include <limits>
+#include <execution>
+#include <ranges>
+#include <fstream>
 
 namespace rt
 {
@@ -44,6 +47,8 @@ namespace rt
                 {
                     return attenuation * rayColor(scattered, depth - 1, world);
                 }
+
+                return glm::vec3(0.0f);
             }
 
             glm::vec3 unitDirection = glm::normalize(ray.direction());
@@ -65,8 +70,8 @@ namespace rt
 
         auto materialGround = std::make_shared<Lambertian>(glm::vec3(0.8f, 0.8f, 0.0f));
         auto materialCenter = std::make_shared<Lambertian>(glm::vec3(0.1, 0.2, 0.5));
-        auto materialLeft = std::make_shared<Metal>(glm::vec3(0.8f, 0.8f, 0.8f));
-        auto materialRight = std::make_shared<Metal>(glm::vec3(0.8f, 0.6f, 0.2f));
+        auto materialLeft = std::make_shared<Metal>(glm::vec3(0.8f, 0.8f, 0.8f), 0.3f);
+        auto materialRight = std::make_shared<Metal>(glm::vec3(0.8f, 0.6f, 0.2f), 1.0f);
 
         world.Add(std::make_shared<Sphere>(glm::vec3(0.0f, -100.5f, -1.0f), 100.0f, materialGround));
         world.Add(std::make_shared<Sphere>(glm::vec3(0.0f, 0.0f, -1.2f), 0.5f, materialCenter));
@@ -96,6 +101,34 @@ namespace rt
         float pixelSamplesScale = 1.0f / samplesPerPixel;
 
         Timer renderTimer;
+
+#define MULTITHREAD_RENDER 1
+
+#if MULTITHREAD_RENDER
+        auto rows = std::views::iota(0, height);
+
+        // clang-format off
+        std::for_each(std::execution::par, rows.begin(), rows.end(), [&](int y)
+        {
+            for (int x = 0; x < width; ++x)
+            {
+                glm::vec3 pixelColor{0.0f};
+                int pixelIndex = (y * width + x) * channels;
+
+                for (int sample = 0; sample < samplesPerPixel; ++sample)
+                {
+                    glm::vec2 offset = getRandomOffset();
+                    Ray r = camera.GetRay(x, y, offset);
+
+                    pixelColor += rayColor(r, maxDepth, world);
+                }
+                pixelColor *= pixelSamplesScale;
+                writePixel(pixels, pixelIndex, pixelColor);
+            }
+        });
+        // clang-format on
+
+#else
         for (int y = 0; y < height; ++y)
         {
             std::cout << "\rScanlines remaining: " << height - y << ' ' << std::flush;
@@ -112,11 +145,30 @@ namespace rt
 
                     pixelColor += rayColor(r, maxDepth, world);
                 }
-                pixelColor *= pixelSamplesScale; // pixelSamplesScale = 1.0f / samplesPerPixel
+                pixelColor *= pixelSamplesScale;
                 writePixel(pixels, pixelIndex, pixelColor);
             }
         }
+#endif
         std::cout << "\rDone (" << renderTimer.ElapsedSeconds() << "s)" << "                 \n";
+
+        try
+        {
+            std::ofstream fs(output.string() + ".txt");
+
+            if (fs.is_open())
+            {
+                fs << "Image:" << std::endl;
+                fs << "\tWidth: " << width << std::endl;
+                fs << "\tHeight: " << height << std::endl;
+                fs << "Render time: " << renderTimer.ElapsedMilliseconds() << " ms" << std::endl;
+            }
+            fs.close();
+        }
+        catch (const std::filesystem::filesystem_error &e)
+        {
+            std::cerr << "Error: " << e.what() << std::endl;
+        }
 
         // Save
         int res = stbi_write_png(output.string().c_str(),

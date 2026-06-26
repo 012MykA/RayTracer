@@ -29,12 +29,13 @@ namespace rt
     class Metal : public Material
     {
     public:
-        Metal(const glm::vec3 &albedo);
+        Metal(const glm::vec3 &albedo, float fuzz);
 
         bool Scatter(const Ray &rayIn, const HitDesc &desc, glm::vec3 &attenuation, Ray &scattered) const override;
 
     private:
         glm::vec3 m_Albedo;
+        float m_Fuzz;
     };
 
 } // namespace rt
