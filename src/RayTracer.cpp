@@ -4,6 +4,7 @@
 #include "Hittable.hpp"
 #include "HittableList.hpp"
 #include "Sphere.hpp"
+#include "Camera.hpp"
 
 #include <stb_image_write.h>
 #include <glm/glm.hpp>
@@ -19,9 +20,9 @@ namespace rt
     {
         void writePixel(unsigned char *pixels, int pixelIndex, const glm::vec3 &color)
         {
-            pixels[pixelIndex + 0] = static_cast<unsigned char>(255.999f * color.r);
-            pixels[pixelIndex + 1] = static_cast<unsigned char>(255.999f * color.g);
-            pixels[pixelIndex + 2] = static_cast<unsigned char>(255.999f * color.b);
+            pixels[pixelIndex + 0] = static_cast<unsigned char>(256 * std::clamp(color.r, 0.0f, 0.999f));
+            pixels[pixelIndex + 1] = static_cast<unsigned char>(256 * std::clamp(color.g, 0.0f, 0.999f));
+            pixels[pixelIndex + 2] = static_cast<unsigned char>(256 * std::clamp(color.b, 0.0f, 0.999f));
         }
 
         glm::vec3 rayColor(const Ray &ray, const Hittable &world)
@@ -41,56 +42,37 @@ namespace rt
 
     void RayTracer::Render(const fs::path &output)
     {
-        // Image
-        float aspectRatio = 16.0f / 9.0f;
-        int imageWidth = 1280;
-        int imageHeight = int(imageWidth / aspectRatio);
-        imageHeight = (imageHeight < 1) ? 1 : imageHeight;
-        std::cout << imageWidth << ", " << imageHeight << std::endl;
-
         // World
         HittableList world;
 
         world.Add(std::make_shared<Sphere>(glm::vec3(0.0f, 0.0f, -1.0f), 0.5f));
         world.Add(std::make_shared<Sphere>(glm::vec3(0.0f, -100.5, -1.0f), 100.0f));
 
+        Camera camera;
+        camera.Initialize();
+
         // Camera
-        float focalLength = 1.0f;
-        float viewportHeight = 2.0f;
-        float viewportWidth = viewportHeight * (float(imageWidth) / imageHeight);
-        glm::vec3 cameraCenter = {0, 0, 0};
+        int width = camera.imageWidth;
+        int height = camera.GetImageHeight();
+        int channels = 3;
 
-        // Calculate the vectors across the horizontal and down the vertical viewport edges.
-        glm::vec3 viewportU = glm::vec3(viewportWidth, 0, 0);
-        glm::vec3 viewportV = glm::vec3(0, -viewportHeight, 0);
-
-        // Calculate the horizontal and vertical delta vectors from pixel to pixel.
-        glm::vec3 pixelDeltaU = viewportU / static_cast<float>(imageWidth);
-        glm::vec3 pixelDeltaV = viewportV / static_cast<float>(imageHeight);
-
-        // Calculate the location of the upper left pixel.
-        glm::vec3 viewportUpperLeft = cameraCenter - glm::vec3(0, 0, focalLength) - (viewportU / 2.0f) - (viewportV / 2.0f);
-        glm::vec3 pixel00Loc = viewportUpperLeft + 0.5f * (pixelDeltaU + pixelDeltaV);
+        std::cout << "Rendering image: " << width << "x" << height << std::endl;
 
         // Allocate pixel buffer
-        int channels = 3;
-        int totalBytes = imageWidth * imageHeight * channels;
-        unsigned char *pixels = new unsigned char[totalBytes];
+        int totalBytes = width * height * channels;
+        auto *pixels = new unsigned char[totalBytes];
         std::fill_n(pixels, totalBytes, 0);
 
         // Render
-        for (int y = 0; y < imageHeight; ++y)
+        for (int y = 0; y < height; ++y)
         {
-            std::cout << "\rScanlines remaining: " << imageHeight - y << ' ' << std::flush;
+            std::cout << "\rScanlines remaining: " << height - y << ' ' << std::flush;
 
-            for (int x = 0; x < imageWidth; ++x)
+            for (int x = 0; x < width; ++x)
             {
-                int pixelIndex = (y * imageWidth + x) * channels;
+                int pixelIndex = (y * width + x) * channels;
 
-                glm::vec3 pixelCenter = pixel00Loc + (static_cast<float>(x) * pixelDeltaU) + (static_cast<float>(y) * pixelDeltaV);
-                glm::vec3 rayDirection = pixelCenter - cameraCenter;
-
-                Ray r(cameraCenter, rayDirection);
+                Ray r = camera.GetRay(x, y);
 
                 glm::vec3 pixelColor = rayColor(r, world);
                 writePixel(pixels, pixelIndex, pixelColor);
@@ -100,9 +82,9 @@ namespace rt
 
         // Save
         int res = stbi_write_png(output.string().c_str(),
-                                 imageWidth, imageHeight, channels,
+                                 width, height, channels,
                                  pixels,
-                                 imageWidth * channels * sizeof(unsigned char));
+                                 width * channels * sizeof(unsigned char));
         if (!res)
         {
             std::cerr << "Error: failed to stbi_write_png\n";
