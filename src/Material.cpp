@@ -21,6 +21,7 @@ namespace rt
     }
 
     Metal::Metal(const glm::vec3 &albedo)
+        : m_Albedo(albedo)
     {
     }
 
