@@ -23,6 +23,8 @@ namespace rt
 
         Ray GetRay(int x, int y) const;
 
+        Ray GetRay(int x, int y, const glm::vec2 &offset) const;
+
         int GetImageHeight() const { return m_ImageHeight; }
 
     private:

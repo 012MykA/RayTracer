@@ -21,7 +21,12 @@ namespace rt
 
     Ray Camera::GetRay(int x, int y) const
     {
-        glm::vec3 pixelCenter = m_Pixel00Loc + (static_cast<float>(x) * m_PixelDeltaU) + (static_cast<float>(y) * m_PixelDeltaV);
+        return GetRay(x, y, glm::vec2(0.0f));
+    }
+
+    Ray Camera::GetRay(int x, int y, const glm::vec2 &offset) const
+    {
+        glm::vec3 pixelCenter = m_Pixel00Loc + (static_cast<float>(x) + offset.x) * m_PixelDeltaU + (static_cast<float>(y) + offset.y) * m_PixelDeltaV;
         glm::vec3 rayDirection = pixelCenter - cameraCenter;
 
         return Ray(cameraCenter, rayDirection);

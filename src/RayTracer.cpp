@@ -5,6 +5,7 @@
 #include "HittableList.hpp"
 #include "Sphere.hpp"
 #include "Camera.hpp"
+#include "Random.hpp"
 
 #include <stb_image_write.h>
 #include <glm/glm.hpp>
@@ -38,6 +39,11 @@ namespace rt
             return (1.0f - a) * glm::vec3(1.0f, 1.0f, 1.0f) + a * glm::vec3(0.5f, 0.7f, 1.0f);
         }
 
+        glm::vec2 getRandomOffset()
+        {
+            return glm::vec2(randomFloat(-0.5f, 0.5f), randomFloat(-0.5f, 0.5f));
+        }
+
     }
 
     void RayTracer::Render(const fs::path &output)
@@ -48,10 +54,11 @@ namespace rt
         world.Add(std::make_shared<Sphere>(glm::vec3(0.0f, 0.0f, -1.0f), 0.5f));
         world.Add(std::make_shared<Sphere>(glm::vec3(0.0f, -100.5, -1.0f), 100.0f));
 
+        // Camera
         Camera camera;
         camera.Initialize();
 
-        // Camera
+        // Image
         int width = camera.imageWidth;
         int height = camera.GetImageHeight();
         int channels = 3;
@@ -64,17 +71,27 @@ namespace rt
         std::fill_n(pixels, totalBytes, 0);
 
         // Render
+        int samplesPerPixel = 3; // Setting
+
+        float pixelSamplesScale = 1.0f / samplesPerPixel;
+
         for (int y = 0; y < height; ++y)
         {
             std::cout << "\rScanlines remaining: " << height - y << ' ' << std::flush;
 
             for (int x = 0; x < width; ++x)
             {
+                glm::vec3 pixelColor{0.0f};
                 int pixelIndex = (y * width + x) * channels;
 
-                Ray r = camera.GetRay(x, y);
+                for (int sample = 0; sample < samplesPerPixel; ++sample)
+                {
+                    glm::vec2 offset = getRandomOffset();
+                    Ray r = camera.GetRay(x, y, offset);
 
-                glm::vec3 pixelColor = rayColor(r, world);
+                    pixelColor += rayColor(r, world);
+                }
+                pixelColor *= pixelSamplesScale; // pixelSamplesScale = 1.0f / samplesPerPixel
                 writePixel(pixels, pixelIndex, pixelColor);
             }
         }
