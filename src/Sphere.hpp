@@ -1,13 +1,16 @@
 #pragma once
 
 #include "Hittable.hpp"
+#include "Material.hpp"
+
+#include <memory>
 
 namespace rt
 {
     class Sphere : public Hittable
     {
     public:
-        Sphere(const glm::vec3 &center, float radius);
+        Sphere(const glm::vec3 &center, float radius, std::shared_ptr<Material> mat);
 
         virtual bool Hit(const Ray &ray, Interval rayT, HitDesc &desc) const override;
 

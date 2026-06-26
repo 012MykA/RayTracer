@@ -6,6 +6,8 @@
 #include "Sphere.hpp"
 #include "Camera.hpp"
 #include "Random.hpp"
+#include "Material.hpp"
+#include "Timer.hpp"
 
 #include <stb_image_write.h>
 #include <glm/glm.hpp>
@@ -36,8 +38,12 @@ namespace rt
             HitDesc desc;
             if (world.Hit(ray, Interval(0.001f, std::numeric_limits<float>::infinity()), desc))
             {
-                glm::vec3 direction = desc.normal + randomUnitVector();
-                return 0.1f * rayColor(Ray(desc.point, direction), depth - 1, world);
+                Ray scattered;
+                glm::vec3 attenuation;
+                if (desc.material->Scatter(ray, desc, attenuation, scattered))
+                {
+                    return attenuation * rayColor(scattered, depth - 1, world);
+                }
             }
 
             glm::vec3 unitDirection = glm::normalize(ray.direction());
@@ -57,8 +63,15 @@ namespace rt
         // World
         HittableList world;
 
-        world.Add(std::make_shared<Sphere>(glm::vec3(0.0f, 0.0f, -1.0f), 0.5f));
-        world.Add(std::make_shared<Sphere>(glm::vec3(0.0f, -100.5, -1.0f), 100.0f));
+        auto materialGround = std::make_shared<Lambertian>(glm::vec3(0.8f, 0.8f, 0.0f));
+        auto materialCenter = std::make_shared<Lambertian>(glm::vec3(0.1, 0.2, 0.5));
+        auto materialLeft = std::make_shared<Metal>(glm::vec3(0.8f, 0.8f, 0.8f));
+        auto materialRight = std::make_shared<Metal>(glm::vec3(0.8f, 0.6f, 0.2f));
+
+        world.Add(std::make_shared<Sphere>(glm::vec3(0.0f, -100.5f, -1.0f), 100.0f, materialGround));
+        world.Add(std::make_shared<Sphere>(glm::vec3(0.0f, 0.0f, -1.2f), 0.5f, materialCenter));
+        world.Add(std::make_shared<Sphere>(glm::vec3(-1.0f, 0.0f, -1.0f), 0.5f, materialLeft));
+        world.Add(std::make_shared<Sphere>(glm::vec3(1.0f, 0.0f, -1.0f), 0.5f, materialRight));
 
         // Camera
         Camera camera;
@@ -77,11 +90,12 @@ namespace rt
         std::fill_n(pixels, totalBytes, 0);
 
         // Render
-        int samplesPerPixel = 10; // Setting
-        int maxDepth = 10;        // Setting
+        int samplesPerPixel = 100; // Setting
+        int maxDepth = 50;         // Setting
 
         float pixelSamplesScale = 1.0f / samplesPerPixel;
 
+        Timer renderTimer;
         for (int y = 0; y < height; ++y)
         {
             std::cout << "\rScanlines remaining: " << height - y << ' ' << std::flush;
@@ -102,7 +116,7 @@ namespace rt
                 writePixel(pixels, pixelIndex, pixelColor);
             }
         }
-        std::cout << "\rDone.                 \n";
+        std::cout << "\rDone (" << renderTimer.ElapsedSeconds() << "s)" << "                 \n";
 
         // Save
         int res = stbi_write_png(output.string().c_str(),

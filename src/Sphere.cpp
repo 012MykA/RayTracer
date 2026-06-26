@@ -4,8 +4,8 @@
 
 namespace rt
 {
-    Sphere::Sphere(const glm::vec3 &center, float radius)
-        : m_Center(center), m_Radius(radius)
+    Sphere::Sphere(const glm::vec3 &center, float radius, std::shared_ptr<Material> mat)
+        : m_Center(center), m_Radius(radius), m_Material(std::move(mat))
     {
     }
 
