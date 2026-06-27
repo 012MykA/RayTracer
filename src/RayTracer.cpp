@@ -16,6 +16,9 @@
 #include <ranges>
 #include <fstream>
 #include <atomic>
+#include <thread>
+#include <syncstream>
+#include <iomanip>
 
 namespace rt
 {
@@ -82,38 +85,68 @@ namespace rt
 
         Timer renderTimer;
 
-        // clang-format off
-        
-        auto rows = std::views::iota(0, height);
+        unsigned int threadCount = std::thread::hardware_concurrency();
+        std::vector<std::thread> threads;
+        threads.reserve(threadCount);
+
+        int rowsPerThread = height / threadCount;
         std::atomic<int> completeRows{0};
-        std::for_each(std::execution::seq, rows.begin(), rows.end(), [&](int y)
+
+        for (unsigned int i = 0; i < threadCount; ++i)
         {
-            Timer rowTimer;
+            int start = i * rowsPerThread;
+            int end = (i == threadCount - 1) ? height : start + rowsPerThread;
 
-            for (int x = 0; x < width; ++x)
+            // clang-format off
+            threads.emplace_back([&](int start, int end)
             {
-                glm::vec3 pixelColor{0.0f};
-                int pixelIndex = (y * width + x) * channels;
-
-                for (int sample = 0; sample < m_RenderConfig.samplesPerPixel; ++sample)
+                for (int y = start; y < end; ++y)
                 {
-                    glm::vec2 offset = getRandomOffset();
-                    Ray r = m_Camera.GetRay(x, y, offset);
+                    Timer rowTimer;
 
-                    pixelColor += rayColor(r, m_RenderConfig.maxDepth, m_World);
+                    for (int x = 0; x < width; ++x)
+                    {
+                        glm::vec3 pixelColor{0.0f};
+                        int pixelIndex = (y * width + x) * channels;
+
+                        for (int sample = 0; sample < m_RenderConfig.samplesPerPixel; ++sample)
+                        {
+                            glm::vec2 offset = getRandomOffset();
+                            Ray r = m_Camera.GetRay(x, y, offset);
+
+                            pixelColor += rayColor(r, m_RenderConfig.maxDepth, m_World);
+                        }
+                        pixelColor *= pixelSamplesScale;
+                        writePixel(pixels, pixelIndex, pixelColor);
+                    }
+                    double elapsed = rowTimer.ElapsedMilliseconds();
+                    
+                    int done = ++completeRows;
+
+                    float percent = (done * 100) / static_cast<float>(height);
+
+                    long long totalSecLeft = elapsed * (height - done) / 1000;
+
+                    unsigned short h = totalSecLeft / 3600;
+                    unsigned short min = (totalSecLeft % 3600) / 60;
+                    unsigned short sec = totalSecLeft % 60;
+                    
+                    std::osyncstream{std::cout}
+                        << "\rProgress: " << std::fixed << std::setprecision(1) << percent << "% ["
+                        << std::setfill('0')
+                        << std::setw(2) << h << ":"
+                        << std::setw(2) << min << ":"
+                        << std::setw(2) << sec << "]" << std::flush;
                 }
-                pixelColor *= pixelSamplesScale;
-                writePixel(pixels, pixelIndex, pixelColor);
-            }
-            double elapsed = rowTimer.ElapsedSeconds();
-            
-            int done = ++completeRows;
-            int percent = (done * 100) / height;
-            double left = elapsed * (height - done);
-            
-            std::cout << "\rProgress: " << percent << "% (" << left << " s)" << std::flush;
-        });
-        // clang-format on
+            }, start, end);
+            // clang-format on
+        }
+
+        for (auto &th : threads)
+        {
+            if (th.joinable())
+                th.join();
+        }
         std::cout << "\rDone (" << renderTimer.ElapsedSeconds() << "s)" << "                 \n";
 
         try

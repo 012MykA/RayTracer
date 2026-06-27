@@ -3,7 +3,7 @@ Image:
 	Height: 720
 
 RenderConfig:
-	Samples per pixel: 100
-	Max depth: 100
+	Samples per pixel: 10000
+	Max depth: 1000
 
-Render time: 33770.7 ms
+Render time: 1.03793e+06 ms
